@@ -4,9 +4,21 @@ import { QRCodeSVG } from 'qrcode.react';
 export default function WaitingRoom() {
   const { roomId, playerName, resetGame, isRandomMatching } = useGame();
   
-  // QRコード用のURL生成（アプリのURLにルームIDをパラメータとして追加）
-  const baseUrl = window.location.origin;
-  const qrCodeUrl = `${baseUrl}?roomId=${roomId}`;
+  // QRコード用のURL生成（より汎用的な方法）
+  const getQRCodeUrl = () => {
+    // 現在のURL情報からパスを構築
+    const currentUrl = window.location.href;
+    // URLの末尾のパス部分（#や?以降）を除去してベースURLを取得
+    const baseUrl = currentUrl.split(/[?#]/)[0];
+    
+    // 末尾のスラッシュを削除（必要に応じて）
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    
+    // 最終的なQRコードのURL
+    return `${cleanBaseUrl}?roomId=${roomId}`;
+  };
+
+  const qrCodeUrl = getQRCodeUrl();
 
   return (
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center justify-center bg-gradient-to-b from-blue-100 to-blue-200">

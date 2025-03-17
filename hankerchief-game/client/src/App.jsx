@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSocket } from './context/SocketContext';
-import HomeScreen from './components/HomeScreen';
+import Lobby from './components/Lobby';
 import GameScreen from './components/GameScreen';
-import LoadingScreen from './components/LoadingScreen';
+import WaitingRoom from './components/WaitingRoom';
 import ResultScreen from './components/ResultScreen';
 
 function App() {
@@ -111,14 +111,14 @@ function App() {
   const renderScreen = () => {
     switch (screen) {
       case 'home':
-        return <HomeScreen 
+        return <Lobby 
           onCreateRoom={createRoom} 
           onJoinRoom={joinRoom} 
           onJoinRandomRoom={joinRandomRoom}
           connected={connected} 
         />;
       case 'loading':
-        return <LoadingScreen roomId={roomId} onLeave={leaveRoom} />;
+        return <WaitingRoom roomId={roomId} onLeave={leaveRoom} />;
       case 'game':
         return <GameScreen 
           socket={socket} 

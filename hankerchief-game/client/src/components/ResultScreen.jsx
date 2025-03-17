@@ -4,15 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 export default function ResultScreen() {
   const { roundResult, playerRole, players, mySocketId } = useGame();
   
-  // 前回までの累積ポイントと今回のポイント
-  const [baseMyPoints, setBaseMyPoints] = useState(0);             // 前回までの累積ポイント
-  const [baseOpponentPoints, setBaseOpponentPoints] = useState(0); // 前回までの累積ポイント
+  // ポイント表示用の状態
+  const [basePoints, setBasePoints] = useState(0);           // 前回までの累積ポイント
+  const [baseOpponentPoints, setBaseOpponentPoints] = useState(0); // 相手の前回までの累積ポイント
   const [animatedRoundPoints, setAnimatedRoundPoints] = useState(0); // 今回の獲得ポイントのアニメーション用
   
   // アニメーションフレームIDを管理するためのref
   const animationFrameRef = useRef(null);
   const animationStartTimeRef = useRef(null);
-  const isInitializedRef = useRef(false);
   
   if (!roundResult) return null;
 
@@ -91,7 +90,7 @@ export default function ResultScreen() {
     const previousOpponentPoints = totalOpponentPoints - opponentRoundPoints;
     
     // 前回までのポイントをすぐに表示
-    setBaseMyPoints(previousMyPoints);
+    setBasePoints(previousMyPoints);
     setBaseOpponentPoints(previousOpponentPoints);
     setAnimatedRoundPoints(0); // アニメーション開始時は0から
     
@@ -109,26 +108,14 @@ export default function ResultScreen() {
         const elapsed = timestamp - animationStartTimeRef.current;
         const progress = Math.min(elapsed / duration, 1);
         
-        // イージング関数（滑らかに）
-        const easeOutQuad = t => t * (2 - t);
-        const easedProgress = easeOutQuad(progress);
-        
-        // プレイヤーの役割に応じて獲得ポイントのアニメーション
-        if (playerRole === 'drop') {
-          setAnimatedRoundPoints(roundPoints * easedProgress);
-        } else {
-          setAnimatedRoundPoints(opponentRoundPoints * easedProgress);
-        }
+        // 線形アニメーション（シンプルに）
+        setAnimatedRoundPoints(progress);
         
         if (progress < 1) {
           animationFrameRef.current = requestAnimationFrame(animate);
         } else {
-          // アニメーション完了時、正確な最終値に設定
-          if (playerRole === 'drop') {
-            setAnimatedRoundPoints(roundPoints);
-          } else {
-            setAnimatedRoundPoints(opponentRoundPoints);
-          }
+          // アニメーション完了時
+          setAnimatedRoundPoints(1); // 100%まで表示
           animationFrameRef.current = null;
         }
       };
@@ -146,14 +133,10 @@ export default function ResultScreen() {
     };
   }, [roundResult, players, playerRole, mySocketId]);
   
-  // 表示用の合計ポイント（ベース + アニメーション）
-  const displayMyPoints = playerRole === 'drop' 
-    ? Math.round(baseMyPoints + animatedRoundPoints)
-    : baseMyPoints;
-    
-  const displayOpponentPoints = playerRole === 'drop'
-    ? baseOpponentPoints
-    : Math.round(baseOpponentPoints + animatedRoundPoints);
+  // プレイヤーの獲得ポイント
+  const myRoundPoints = playerRole === 'drop' ? roundResult.points : 0;
+  // 相手の獲得ポイント
+  const opponentRoundPoints = playerRole === 'drop' ? 0 : roundResult.points;
   
   return (
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center justify-center bg-gradient-to-b from-blue-100 to-blue-200">
@@ -171,11 +154,11 @@ export default function ResultScreen() {
             <div className="flex justify-between">
               <div>
                 <p className="text-sm font-medium text-black">あなた</p>
-                <p className="text-xl font-bold text-black">{playerRole === 'drop' ? roundResult.points : 0}ポイント</p>
+                <p className="text-xl font-bold text-black">{myRoundPoints}ポイント</p>
               </div>
               <div className="text-right">
                 <p className="text-sm font-medium text-black">相手</p>
-                <p className="text-xl font-bold text-black">{playerRole === 'drop' ? 0 : roundResult.points}ポイント</p>
+                <p className="text-xl font-bold text-black">{opponentRoundPoints}ポイント</p>
               </div>
             </div>
           </div>
@@ -189,27 +172,28 @@ export default function ResultScreen() {
               <div className="flex flex-col items-center w-1/3">
                 <div className="text-center mb-2">
                   <p className="text-sm font-medium text-black">あなた</p>
-                  <p className="text-xl font-bold text-black">{displayMyPoints}ポイント</p>
+                  <p className="text-xl font-bold text-black">{basePoints + Math.round(myRoundPoints * animatedRoundPoints)}ポイント</p>
                 </div>
                 <div className="relative w-16 h-48 bg-gray-200 rounded-t-lg overflow-hidden">
-                  {/* 前回までのベースポイントを表示 */}
+                  {/* 前回までの累積ポイント */}
                   <div 
-                    className="absolute bottom-0 w-full bg-blue-400 rounded-t-lg"
+                    className="absolute bottom-0 w-full bg-blue-600 rounded-t-lg"
                     style={{ 
-                      height: `${Math.min(baseMyPoints, 100) / 100 * 100}%`
+                      height: `${Math.min(basePoints, 100) / 100 * 100}%`
                     }}
                   ></div>
-                  {/* 今回の獲得ポイントをアニメーション */}
-                  {playerRole === 'drop' && (
+                  
+                  {/* 今回獲得した分のポイント（アニメーション） */}
+                  {myRoundPoints > 0 && (
                     <div 
-                      className="absolute bottom-0 w-full bg-blue-600 rounded-t-lg"
+                      className="absolute w-full bg-blue-600 rounded-t-lg"
                       style={{ 
-                        height: `${Math.min(baseMyPoints + animatedRoundPoints, 100) / 100 * 100}%`,
-                        transform: `translateY(${Math.min(baseMyPoints, 100) / 100 * 100}%)`,
-                        transformOrigin: 'bottom'
+                        height: `${Math.min(myRoundPoints, 100) / 100 * 100 * animatedRoundPoints}%`,
+                        bottom: `${Math.min(basePoints, 100) / 100 * 100}%`
                       }}
                     ></div>
                   )}
+                  
                   {/* 目盛り */}
                   <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-between pointer-events-none">
                     <div className="flex w-full items-center">
@@ -241,27 +225,28 @@ export default function ResultScreen() {
               <div className="flex flex-col items-center w-1/3">
                 <div className="text-center mb-2">
                   <p className="text-sm font-medium text-black">相手</p>
-                  <p className="text-xl font-bold text-black">{displayOpponentPoints}ポイント</p>
+                  <p className="text-xl font-bold text-black">{baseOpponentPoints + Math.round(opponentRoundPoints * animatedRoundPoints)}ポイント</p>
                 </div>
                 <div className="relative w-16 h-48 bg-gray-200 rounded-t-lg overflow-hidden">
-                  {/* 前回までのベースポイントを表示 */}
+                  {/* 前回までの累積ポイント */}
                   <div 
-                    className="absolute bottom-0 w-full bg-red-300 rounded-t-lg"
+                    className="absolute bottom-0 w-full bg-red-500 rounded-t-lg"
                     style={{ 
                       height: `${Math.min(baseOpponentPoints, 100) / 100 * 100}%`
                     }}
                   ></div>
-                  {/* 今回の獲得ポイントをアニメーション */}
-                  {playerRole === 'check' && (
+                  
+                  {/* 今回獲得した分のポイント（アニメーション） */}
+                  {opponentRoundPoints > 0 && (
                     <div 
-                      className="absolute bottom-0 w-full bg-red-500 rounded-t-lg"
+                      className="absolute w-full bg-red-500 rounded-t-lg"
                       style={{ 
-                        height: `${Math.min(baseOpponentPoints + animatedRoundPoints, 100) / 100 * 100}%`,
-                        transform: `translateY(${Math.min(baseOpponentPoints, 100) / 100 * 100}%)`,
-                        transformOrigin: 'bottom'
+                        height: `${Math.min(opponentRoundPoints, 100) / 100 * 100 * animatedRoundPoints}%`,
+                        bottom: `${Math.min(baseOpponentPoints, 100) / 100 * 100}%`
                       }}
                     ></div>
                   )}
+                  
                   {/* 目盛り */}
                   <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-between pointer-events-none">
                     <div className="flex w-full items-center">

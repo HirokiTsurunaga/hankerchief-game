@@ -14,9 +14,24 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('未処理のPromise拒否:', reason);
 });
 
+// 許可するオリジンの設定
+const allowedOrigins = process.env.CLIENT_URL 
+  ? [process.env.CLIENT_URL, 'https://hirokitsurunaga.github.io']
+  : ['http://localhost:5173', 'https://hirokitsurunaga.github.io'];
+
+console.log('許可されたオリジン:', allowedOrigins);
+
 const app = express();
 app.use(cors({
-  origin: "*",
+  origin: (origin, callback) => {
+    // undefined originはローカル開発環境からのリクエスト
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS ブロック:', origin);
+      callback(new Error('CORS policy violation'));
+    }
+  },
   methods: ["GET", "POST"],
   credentials: true
 }));
@@ -54,7 +69,7 @@ setInterval(() => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: allowedOrigins,
     methods: ["GET", "POST", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"]

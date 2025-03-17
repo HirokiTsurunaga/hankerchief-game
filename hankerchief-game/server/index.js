@@ -11,6 +11,11 @@ app.use(cors({
   credentials: true
 }));
 
+// テスト用APIエンドポイントを追加
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'CORS is working!', timestamp: new Date().toISOString() });
+});
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {

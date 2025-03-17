@@ -1,0 +1,38 @@
+# Node.js関連
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+.pnpm-debug.log
+
+# 環境変数
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ビルドディレクトリ
+/client/dist
+/client/build
+
+# エディタ関連
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS関連
+.DS_Store
+Thumbs.db
+
+# デバッグ
+*.log
+logs/
+
+# テスト
+/coverage
+
+# その他
+.cache/
+.temp/

@@ -36,7 +36,7 @@
 
 - **フロントエンド**: React, Vite, TailwindCSS
 - **バックエンド**: Node.js, Express, Socket.io
-- **デプロイ**: GitHub Pages (フロントエンド), Railway (バックエンド)
+- **デプロイ**: GitHub Pages (フロントエンド), Render (バックエンド)
 
 ## セットアップ方法
 

@@ -4,33 +4,24 @@ import { useState, useEffect, useRef } from 'react';
 export default function ResultScreen() {
   const { roundResult, playerRole, players, mySocketId } = useGame();
   
-  // アニメーション用の状態
-  const [animatedMyPoints, setAnimatedMyPoints] = useState(0);
-  const [animatedOpponentPoints, setAnimatedOpponentPoints] = useState(0);
-  
-  // 計算済みポイント情報を保持するためのref
-  const pointsDataRef = useRef({
-    previousMyPoints: 0,
-    previousOpponentPoints: 0,
-    updatedMyPoints: 0, 
-    updatedOpponentPoints: 0,
-    roundPoints: 0,
-    opponentRoundPoints: 0
-  });
+  // 前回までの累積ポイントと今回のポイント
+  const [baseMyPoints, setBaseMyPoints] = useState(0);             // 前回までの累積ポイント
+  const [baseOpponentPoints, setBaseOpponentPoints] = useState(0); // 前回までの累積ポイント
+  const [animatedRoundPoints, setAnimatedRoundPoints] = useState(0); // 今回の獲得ポイントのアニメーション用
   
   // アニメーションフレームIDを管理するためのref
   const animationFrameRef = useRef(null);
   const animationStartTimeRef = useRef(null);
-  const hasAnimatedRef = useRef(false);
-
-  // 役割に基づいてメッセージを変更
-  let resultMessage = '';
-  let resultClass = '';
+  const isInitializedRef = useRef(false);
   
   if (!roundResult) return null;
 
   const currentPlayer = players.find(p => p.role === playerRole);
   const opponentPlayer = players.find(p => p.role !== playerRole);
+
+  // 役割に基づいてメッセージを変更
+  let resultMessage = '';
+  let resultClass = '';
   
   if (playerRole === 'drop') {
     // ドロップ役側の結果メッセージ
@@ -64,7 +55,7 @@ export default function ResultScreen() {
     }
   }
   
-  // ポイントアニメーションを制御するエフェクト
+  // ポイント計算とアニメーションを制御するエフェクト
   useEffect(() => {
     if (!roundResult) return;
     
@@ -79,53 +70,33 @@ export default function ResultScreen() {
     const opponentRoundPoints = playerRole === 'drop' ? 0 : roundResult.points;
     
     // サーバーから送られてきた最新のポイント情報を取得
-    let updatedMyPoints = currentPlayer?.points || 0;
-    let updatedOpponentPoints = opponentPlayer?.points || 0;
+    let totalMyPoints = currentPlayer?.points || 0;
+    let totalOpponentPoints = opponentPlayer?.points || 0;
     
     if (roundResult.playerPoints && roundResult.playerPoints.length === 2) {
       const myPlayerPoint = roundResult.playerPoints.find(p => p.id === mySocketId);
       const opponentPlayerPoint = roundResult.playerPoints.find(p => p.id !== mySocketId);
       
       if (myPlayerPoint) {
-        updatedMyPoints = myPlayerPoint.points;
+        totalMyPoints = myPlayerPoint.points;
       }
       
       if (opponentPlayerPoint) {
-        updatedOpponentPoints = opponentPlayerPoint.points;
+        totalOpponentPoints = opponentPlayerPoint.points;
       }
     }
 
-    // 前回のポイントを計算（初回の場合は0から開始）
-    let previousMyPoints = 0;
-    let previousOpponentPoints = 0;
+    // 前回までの累積ポイントを計算
+    const previousMyPoints = totalMyPoints - roundPoints;
+    const previousOpponentPoints = totalOpponentPoints - opponentRoundPoints;
     
-    if (hasAnimatedRef.current) {
-      // 2回目以降は前回の値から計算
-      previousMyPoints = updatedMyPoints - roundPoints;
-      previousOpponentPoints = updatedOpponentPoints - opponentRoundPoints;
-    } else {
-      // 初回は0から開始
-      previousMyPoints = 0;
-      previousOpponentPoints = 0;
-      hasAnimatedRef.current = true;
-    }
-    
-    // 計算結果をrefに保存
-    pointsDataRef.current = {
-      previousMyPoints,
-      previousOpponentPoints,
-      updatedMyPoints,
-      updatedOpponentPoints,
-      roundPoints,
-      opponentRoundPoints
-    };
-    
-    // 初期値を設定
-    setAnimatedMyPoints(previousMyPoints);
-    setAnimatedOpponentPoints(previousOpponentPoints);
+    // 前回までのポイントをすぐに表示
+    setBaseMyPoints(previousMyPoints);
+    setBaseOpponentPoints(previousOpponentPoints);
+    setAnimatedRoundPoints(0); // アニメーション開始時は0から
     
     // アニメーションの設定
-    const duration = 1800; // アニメーション期間（ミリ秒）をさらに長く
+    const duration = 1500; // アニメーション期間（ミリ秒）
     animationStartTimeRef.current = null;
     
     // 少し遅延させてからアニメーション開始
@@ -138,26 +109,26 @@ export default function ResultScreen() {
         const elapsed = timestamp - animationStartTimeRef.current;
         const progress = Math.min(elapsed / duration, 1);
         
-        // イージング関数（より滑らかに）
-        const easeOut = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-        const easedProgress = easeOut(progress);
+        // イージング関数（滑らかに）
+        const easeOutQuad = t => t * (2 - t);
+        const easedProgress = easeOutQuad(progress);
         
-        // 現在のアニメーション値を計算
-        const currentMyPoints = Math.round(pointsDataRef.current.previousMyPoints + 
-          (pointsDataRef.current.updatedMyPoints - pointsDataRef.current.previousMyPoints) * easedProgress);
-        
-        const currentOpponentPoints = Math.round(pointsDataRef.current.previousOpponentPoints + 
-          (pointsDataRef.current.updatedOpponentPoints - pointsDataRef.current.previousOpponentPoints) * easedProgress);
-        
-        setAnimatedMyPoints(currentMyPoints);
-        setAnimatedOpponentPoints(currentOpponentPoints);
+        // プレイヤーの役割に応じて獲得ポイントのアニメーション
+        if (playerRole === 'drop') {
+          setAnimatedRoundPoints(roundPoints * easedProgress);
+        } else {
+          setAnimatedRoundPoints(opponentRoundPoints * easedProgress);
+        }
         
         if (progress < 1) {
           animationFrameRef.current = requestAnimationFrame(animate);
         } else {
           // アニメーション完了時、正確な最終値に設定
-          setAnimatedMyPoints(pointsDataRef.current.updatedMyPoints);
-          setAnimatedOpponentPoints(pointsDataRef.current.updatedOpponentPoints);
+          if (playerRole === 'drop') {
+            setAnimatedRoundPoints(roundPoints);
+          } else {
+            setAnimatedRoundPoints(opponentRoundPoints);
+          }
           animationFrameRef.current = null;
         }
       };
@@ -174,6 +145,15 @@ export default function ResultScreen() {
       }
     };
   }, [roundResult, players, playerRole, mySocketId]);
+  
+  // 表示用の合計ポイント（ベース + アニメーション）
+  const displayMyPoints = playerRole === 'drop' 
+    ? Math.round(baseMyPoints + animatedRoundPoints)
+    : baseMyPoints;
+    
+  const displayOpponentPoints = playerRole === 'drop'
+    ? baseOpponentPoints
+    : Math.round(baseOpponentPoints + animatedRoundPoints);
   
   return (
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center justify-center bg-gradient-to-b from-blue-100 to-blue-200">
@@ -209,16 +189,28 @@ export default function ResultScreen() {
               <div className="flex flex-col items-center w-1/3">
                 <div className="text-center mb-2">
                   <p className="text-sm font-medium text-black">あなた</p>
-                  <p className="text-xl font-bold text-black">{animatedMyPoints}ポイント</p>
+                  <p className="text-xl font-bold text-black">{displayMyPoints}ポイント</p>
                 </div>
                 <div className="relative w-16 h-48 bg-gray-200 rounded-t-lg overflow-hidden">
+                  {/* 前回までのベースポイントを表示 */}
                   <div 
-                    className="absolute bottom-0 w-full bg-blue-600 rounded-t-lg"
+                    className="absolute bottom-0 w-full bg-blue-400 rounded-t-lg"
                     style={{ 
-                      height: `${Math.min(animatedMyPoints, 100) / 100 * 100}%`
+                      height: `${Math.min(baseMyPoints, 100) / 100 * 100}%`
                     }}
                   ></div>
-                  {/* 目盛り - ポイントのマークを表示する */}
+                  {/* 今回の獲得ポイントをアニメーション */}
+                  {playerRole === 'drop' && (
+                    <div 
+                      className="absolute bottom-0 w-full bg-blue-600 rounded-t-lg"
+                      style={{ 
+                        height: `${Math.min(baseMyPoints + animatedRoundPoints, 100) / 100 * 100}%`,
+                        transform: `translateY(${Math.min(baseMyPoints, 100) / 100 * 100}%)`,
+                        transformOrigin: 'bottom'
+                      }}
+                    ></div>
+                  )}
+                  {/* 目盛り */}
                   <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-between pointer-events-none">
                     <div className="flex w-full items-center">
                       <div className="border-t border-gray-400 w-3 h-0"></div>
@@ -249,16 +241,28 @@ export default function ResultScreen() {
               <div className="flex flex-col items-center w-1/3">
                 <div className="text-center mb-2">
                   <p className="text-sm font-medium text-black">相手</p>
-                  <p className="text-xl font-bold text-black">{animatedOpponentPoints}ポイント</p>
+                  <p className="text-xl font-bold text-black">{displayOpponentPoints}ポイント</p>
                 </div>
                 <div className="relative w-16 h-48 bg-gray-200 rounded-t-lg overflow-hidden">
+                  {/* 前回までのベースポイントを表示 */}
                   <div 
-                    className="absolute bottom-0 w-full bg-red-500 rounded-t-lg"
+                    className="absolute bottom-0 w-full bg-red-300 rounded-t-lg"
                     style={{ 
-                      height: `${Math.min(animatedOpponentPoints, 100) / 100 * 100}%`
+                      height: `${Math.min(baseOpponentPoints, 100) / 100 * 100}%`
                     }}
                   ></div>
-                  {/* 目盛り - ポイントのマークを表示する */}
+                  {/* 今回の獲得ポイントをアニメーション */}
+                  {playerRole === 'check' && (
+                    <div 
+                      className="absolute bottom-0 w-full bg-red-500 rounded-t-lg"
+                      style={{ 
+                        height: `${Math.min(baseOpponentPoints + animatedRoundPoints, 100) / 100 * 100}%`,
+                        transform: `translateY(${Math.min(baseOpponentPoints, 100) / 100 * 100}%)`,
+                        transformOrigin: 'bottom'
+                      }}
+                    ></div>
+                  )}
+                  {/* 目盛り */}
                   <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-between pointer-events-none">
                     <div className="flex w-full items-center">
                       <div className="border-t border-gray-400 w-3 h-0"></div>

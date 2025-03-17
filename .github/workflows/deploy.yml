@@ -2,8 +2,10 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches:
+      - main
+    paths:
+      - 'hankerchief-game/client/**'
 
 jobs:
   build-and-deploy:
@@ -12,23 +14,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
       - name: Install Dependencies
+        working-directory: ./hankerchief-game/client
+        run: npm ci
+
+      - name: Create env file
+        working-directory: ./hankerchief-game/client
         run: |
-          cd hankerchief-game/client
-          npm ci
+          echo "VITE_SERVER_URL=https://hankerchief-game-server.onrender.com" > .env.production
 
       - name: Build
-        run: |
-          cd hankerchief-game/client
-          npm run build
+        working-directory: ./hankerchief-game/client
+        run: npm run build
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: hankerchief-game/client/dist
+          folder: ./hankerchief-game/client/dist
           branch: gh-pages 

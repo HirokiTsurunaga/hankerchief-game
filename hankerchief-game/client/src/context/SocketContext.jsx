@@ -12,8 +12,8 @@ export const SocketProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    // 環境変数からサーバーURLを取得する（本番環境ではRenderのURL）
-    const serverUrl = import.meta.env.VITE_SERVER_URL || 'https://hankerchief-game-server.onrender.com';
+    // 環境変数からサーバーURLを取得する（デフォルトはローカル開発用）
+    const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
     console.log('接続先サーバー:', serverUrl);
     
     const socketInstance = io(serverUrl, {

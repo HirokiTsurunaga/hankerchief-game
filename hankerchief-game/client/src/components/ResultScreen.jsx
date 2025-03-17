@@ -175,24 +175,29 @@ export default function ResultScreen() {
                   <p className="text-xl font-bold text-black">{basePoints + Math.round(myRoundPoints * animatedRoundPoints)}ポイント</p>
                 </div>
                 <div className="relative w-16 h-48 bg-gray-200 rounded-t-lg overflow-hidden">
-                  {/* 前回までの累積ポイント */}
-                  <div 
-                    className="absolute bottom-0 w-full bg-blue-600 rounded-t-lg"
-                    style={{ 
-                      height: `${Math.min(basePoints, 100) / 100 * 100}%`
-                    }}
-                  ></div>
-                  
-                  {/* 今回獲得した分のポイント（アニメーション） */}
-                  {myRoundPoints > 0 && (
+                  {/* プログレスバー全体のコンテナ */}
+                  <div className="absolute bottom-0 w-full h-full">
+                    {/* 前回までの累積ポイント */}
                     <div 
-                      className="absolute w-full bg-blue-600 rounded-t-lg"
+                      className="absolute bottom-0 w-full bg-blue-600 rounded-t-none"
                       style={{ 
-                        height: `${Math.min(myRoundPoints, 100) / 100 * 100 * animatedRoundPoints}%`,
-                        bottom: `${Math.min(basePoints, 100) / 100 * 100}%`
+                        height: `${Math.min(basePoints, 100) / 100 * 100}%`,
+                        borderTopLeftRadius: myRoundPoints > 0 ? '0' : '0.5rem',
+                        borderTopRightRadius: myRoundPoints > 0 ? '0' : '0.5rem'
                       }}
                     ></div>
-                  )}
+                    
+                    {/* 今回獲得した分のポイント（アニメーション） */}
+                    {myRoundPoints > 0 && (
+                      <div 
+                        className="absolute w-full bg-blue-600 rounded-t-lg rounded-b-none"
+                        style={{ 
+                          height: `${Math.min(myRoundPoints, 100) / 100 * 100 * animatedRoundPoints}%`,
+                          bottom: `${Math.min(basePoints, 100) / 100 * 100}%`
+                        }}
+                      ></div>
+                    )}
+                  </div>
                   
                   {/* 目盛り */}
                   <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-between pointer-events-none">
@@ -228,24 +233,29 @@ export default function ResultScreen() {
                   <p className="text-xl font-bold text-black">{baseOpponentPoints + Math.round(opponentRoundPoints * animatedRoundPoints)}ポイント</p>
                 </div>
                 <div className="relative w-16 h-48 bg-gray-200 rounded-t-lg overflow-hidden">
-                  {/* 前回までの累積ポイント */}
-                  <div 
-                    className="absolute bottom-0 w-full bg-red-500 rounded-t-lg"
-                    style={{ 
-                      height: `${Math.min(baseOpponentPoints, 100) / 100 * 100}%`
-                    }}
-                  ></div>
-                  
-                  {/* 今回獲得した分のポイント（アニメーション） */}
-                  {opponentRoundPoints > 0 && (
+                  {/* プログレスバー全体のコンテナ */}
+                  <div className="absolute bottom-0 w-full h-full">
+                    {/* 前回までの累積ポイント */}
                     <div 
-                      className="absolute w-full bg-red-500 rounded-t-lg"
+                      className="absolute bottom-0 w-full bg-red-500 rounded-t-none"
                       style={{ 
-                        height: `${Math.min(opponentRoundPoints, 100) / 100 * 100 * animatedRoundPoints}%`,
-                        bottom: `${Math.min(baseOpponentPoints, 100) / 100 * 100}%`
+                        height: `${Math.min(baseOpponentPoints, 100) / 100 * 100}%`,
+                        borderTopLeftRadius: opponentRoundPoints > 0 ? '0' : '0.5rem',
+                        borderTopRightRadius: opponentRoundPoints > 0 ? '0' : '0.5rem'
                       }}
                     ></div>
-                  )}
+                    
+                    {/* 今回獲得した分のポイント（アニメーション） */}
+                    {opponentRoundPoints > 0 && (
+                      <div 
+                        className="absolute w-full bg-red-500 rounded-t-lg rounded-b-none"
+                        style={{ 
+                          height: `${Math.min(opponentRoundPoints, 100) / 100 * 100 * animatedRoundPoints}%`,
+                          bottom: `${Math.min(baseOpponentPoints, 100) / 100 * 100}%`
+                        }}
+                      ></div>
+                    )}
+                  </div>
                   
                   {/* 目盛り */}
                   <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-between pointer-events-none">

@@ -75,16 +75,18 @@ export default function GameScreen() {
   // カウントダウン表示
   if (isCountingDown) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-100 to-blue-200">
-        <div className="text-6xl font-bold text-blue-600">
-          {countdown === 0 ? "スタート！" : countdown}
-        </div>
-        <div className="mt-4 text-xl text-gray-700">
-          {playerRole === 'drop' ? (
-            <span className="bg-blue-700 text-white px-4 py-2 rounded-md font-bold">あなたはドロップ役です</span>
-          ) : (
-            <span className="bg-red-700 text-white px-4 py-2 rounded-md font-bold">あなたはチェック役です</span>
-          )}
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-100 to-blue-200 p-4">
+        <div className="container mx-auto bg-white/80 rounded-xl shadow-lg p-8 flex flex-col items-center justify-center">
+          <div className="text-6xl font-bold text-blue-600 mb-6">
+            {countdown === 0 ? "スタート！" : countdown}
+          </div>
+          <div className="text-xl text-gray-700">
+            {playerRole === 'drop' ? (
+              <span className="bg-blue-700 text-white px-6 py-3 rounded-md font-bold">あなたはドロップ役です</span>
+            ) : (
+              <span className="bg-red-700 text-white px-6 py-3 rounded-md font-bold">あなたはチェック役です</span>
+            )}
+          </div>
         </div>
       </div>
     );

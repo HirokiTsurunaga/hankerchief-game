@@ -26,7 +26,7 @@ jobs:
       - name: Create env file
         working-directory: ./hankerchief-game/client
         run: |
-          echo "VITE_SERVER_URL=https://hankerchief-game-server.onrender.com" > .env.production
+          echo "VITE_SERVER_URL=${{ secrets.SERVER_URL }}" > .env.production
 
       - name: Build
         working-directory: ./hankerchief-game/client

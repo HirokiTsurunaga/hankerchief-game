@@ -12,8 +12,11 @@ export const SocketProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    // 本番環境では環境変数から取得するなどの対応が必要
-    const socketInstance = io('http://localhost:3001');
+    // 環境変数からサーバーURLを取得する（デフォルトはローカル開発用）
+    const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+    console.log('接続先サーバー:', serverUrl);
+    
+    const socketInstance = io(serverUrl);
 
     socketInstance.on('connect', () => {
       console.log('Socket.io接続成功');

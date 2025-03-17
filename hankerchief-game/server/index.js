@@ -15,9 +15,27 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // 許可するオリジンの設定
-const allowedOrigins = process.env.CLIENT_URL 
-  ? [process.env.CLIENT_URL, 'https://hirokitsurunaga.github.io']
-  : ['http://localhost:5173', 'https://hirokitsurunaga.github.io'];
+const allowedOrigins = [];
+// 開発環境用
+if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+  allowedOrigins.push('http://localhost:5173');
+}
+// 本番環境用のクライアントURL
+if (process.env.CLIENT_URL) {
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
+// GitHub Pages URL
+if (process.env.GITHUB_PAGES_URL) {
+  allowedOrigins.push(process.env.GITHUB_PAGES_URL);
+} else if (process.env.CLIENT_URL) {
+  // CLIENT_URLがGitHub Pagesでない場合は、代替として使用
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
+
+// 許可されたオリジンがない場合のフォールバック
+if (allowedOrigins.length === 0) {
+  allowedOrigins.push('http://localhost:5173');
+}
 
 console.log('許可されたオリジン:', allowedOrigins);
 

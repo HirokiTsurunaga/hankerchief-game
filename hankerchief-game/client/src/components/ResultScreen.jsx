@@ -7,21 +7,30 @@ export default function ResultScreen() {
   // アニメーション用の状態
   const [animatedMyPoints, setAnimatedMyPoints] = useState(0);
   const [animatedOpponentPoints, setAnimatedOpponentPoints] = useState(0);
-  const [previousMyPoints, setPreviousMyPoints] = useState(0);
-  const [previousOpponentPoints, setPreviousOpponentPoints] = useState(0);
+  
+  // 計算済みポイント情報を保持するためのref
+  const pointsDataRef = useRef({
+    previousMyPoints: 0,
+    previousOpponentPoints: 0,
+    updatedMyPoints: 0, 
+    updatedOpponentPoints: 0,
+    roundPoints: 0,
+    opponentRoundPoints: 0
+  });
   
   // アニメーションフレームIDを管理するためのref
   const animationFrameRef = useRef(null);
   const animationStartTimeRef = useRef(null);
+  const hasAnimatedRef = useRef(false);
+
+  // 役割に基づいてメッセージを変更
+  let resultMessage = '';
+  let resultClass = '';
   
   if (!roundResult) return null;
 
   const currentPlayer = players.find(p => p.role === playerRole);
   const opponentPlayer = players.find(p => p.role !== playerRole);
-
-  // 役割に基づいてメッセージを変更
-  let resultMessage = '';
-  let resultClass = '';
   
   if (playerRole === 'drop') {
     // ドロップ役側の結果メッセージ
@@ -54,29 +63,6 @@ export default function ResultScreen() {
       resultClass = 'text-red-600';
     }
   }
-
-  // このラウンドで獲得したポイントを計算
-  const roundPoints = playerRole === 'drop' ? roundResult.points : 0;
-  const opponentRoundPoints = playerRole === 'drop' ? 0 : roundResult.points;
-  
-  // サーバーから送られてきた最新のポイント情報を取得
-  // この情報はすでに今回のラウンドのポイントが加算された状態
-  let updatedMyPoints = currentPlayer?.points || 0;
-  let updatedOpponentPoints = opponentPlayer?.points || 0;
-  
-  if (roundResult.playerPoints && roundResult.playerPoints.length === 2) {
-    // roundResult.playerPointsから自分と相手の最新ポイントを取得
-    const myPlayerPoint = roundResult.playerPoints.find(p => p.id === mySocketId);
-    const opponentPlayerPoint = roundResult.playerPoints.find(p => p.id !== mySocketId);
-    
-    if (myPlayerPoint) {
-      updatedMyPoints = myPlayerPoint.points;
-    }
-    
-    if (opponentPlayerPoint) {
-      updatedOpponentPoints = opponentPlayerPoint.points;
-    }
-  }
   
   // ポイントアニメーションを制御するエフェクト
   useEffect(() => {
@@ -88,18 +74,58 @@ export default function ResultScreen() {
       animationFrameRef.current = null;
     }
     
-    // 現在のポイントから前回のポイントを計算
-    const calculatedPreviousMyPoints = updatedMyPoints - roundPoints;
-    const calculatedPreviousOpponentPoints = updatedOpponentPoints - opponentRoundPoints;
+    // このラウンドで獲得したポイントを計算
+    const roundPoints = playerRole === 'drop' ? roundResult.points : 0;
+    const opponentRoundPoints = playerRole === 'drop' ? 0 : roundResult.points;
+    
+    // サーバーから送られてきた最新のポイント情報を取得
+    let updatedMyPoints = currentPlayer?.points || 0;
+    let updatedOpponentPoints = opponentPlayer?.points || 0;
+    
+    if (roundResult.playerPoints && roundResult.playerPoints.length === 2) {
+      const myPlayerPoint = roundResult.playerPoints.find(p => p.id === mySocketId);
+      const opponentPlayerPoint = roundResult.playerPoints.find(p => p.id !== mySocketId);
+      
+      if (myPlayerPoint) {
+        updatedMyPoints = myPlayerPoint.points;
+      }
+      
+      if (opponentPlayerPoint) {
+        updatedOpponentPoints = opponentPlayerPoint.points;
+      }
+    }
+
+    // 前回のポイントを計算（初回の場合は0から開始）
+    let previousMyPoints = 0;
+    let previousOpponentPoints = 0;
+    
+    if (hasAnimatedRef.current) {
+      // 2回目以降は前回の値から計算
+      previousMyPoints = updatedMyPoints - roundPoints;
+      previousOpponentPoints = updatedOpponentPoints - opponentRoundPoints;
+    } else {
+      // 初回は0から開始
+      previousMyPoints = 0;
+      previousOpponentPoints = 0;
+      hasAnimatedRef.current = true;
+    }
+    
+    // 計算結果をrefに保存
+    pointsDataRef.current = {
+      previousMyPoints,
+      previousOpponentPoints,
+      updatedMyPoints,
+      updatedOpponentPoints,
+      roundPoints,
+      opponentRoundPoints
+    };
     
     // 初期値を設定
-    setAnimatedMyPoints(calculatedPreviousMyPoints);
-    setAnimatedOpponentPoints(calculatedPreviousOpponentPoints);
-    setPreviousMyPoints(calculatedPreviousMyPoints);
-    setPreviousOpponentPoints(calculatedPreviousOpponentPoints);
+    setAnimatedMyPoints(previousMyPoints);
+    setAnimatedOpponentPoints(previousOpponentPoints);
     
     // アニメーションの設定
-    const duration = 1500; // アニメーション期間（ミリ秒）
+    const duration = 1800; // アニメーション期間（ミリ秒）をさらに長く
     animationStartTimeRef.current = null;
     
     // 少し遅延させてからアニメーション開始
@@ -112,13 +138,16 @@ export default function ResultScreen() {
         const elapsed = timestamp - animationStartTimeRef.current;
         const progress = Math.min(elapsed / duration, 1);
         
-        // イージング関数（徐々に遅くなる）
-        const easeOut = t => 1 - Math.pow(1 - t, 3); // よりスムーズなイージング
+        // イージング関数（より滑らかに）
+        const easeOut = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
         const easedProgress = easeOut(progress);
         
         // 現在のアニメーション値を計算
-        const currentMyPoints = Math.round(calculatedPreviousMyPoints + (updatedMyPoints - calculatedPreviousMyPoints) * easedProgress);
-        const currentOpponentPoints = Math.round(calculatedPreviousOpponentPoints + (updatedOpponentPoints - calculatedPreviousOpponentPoints) * easedProgress);
+        const currentMyPoints = Math.round(pointsDataRef.current.previousMyPoints + 
+          (pointsDataRef.current.updatedMyPoints - pointsDataRef.current.previousMyPoints) * easedProgress);
+        
+        const currentOpponentPoints = Math.round(pointsDataRef.current.previousOpponentPoints + 
+          (pointsDataRef.current.updatedOpponentPoints - pointsDataRef.current.previousOpponentPoints) * easedProgress);
         
         setAnimatedMyPoints(currentMyPoints);
         setAnimatedOpponentPoints(currentOpponentPoints);
@@ -127,8 +156,8 @@ export default function ResultScreen() {
           animationFrameRef.current = requestAnimationFrame(animate);
         } else {
           // アニメーション完了時、正確な最終値に設定
-          setAnimatedMyPoints(updatedMyPoints);
-          setAnimatedOpponentPoints(updatedOpponentPoints);
+          setAnimatedMyPoints(pointsDataRef.current.updatedMyPoints);
+          setAnimatedOpponentPoints(pointsDataRef.current.updatedOpponentPoints);
           animationFrameRef.current = null;
         }
       };
@@ -144,7 +173,7 @@ export default function ResultScreen() {
         animationFrameRef.current = null;
       }
     };
-  }, [roundResult]); // roundResultのみに依存
+  }, [roundResult, players, playerRole, mySocketId]);
   
   return (
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center justify-center bg-gradient-to-b from-blue-100 to-blue-200">

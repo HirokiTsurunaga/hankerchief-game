@@ -1,7 +1,15 @@
 import { useGame } from '../context/GameContext';
+import { useState, useEffect } from 'react';
 
 export default function ResultScreen() {
   const { roundResult, playerRole, players, mySocketId } = useGame();
+  
+  // アニメーション用の状態
+  const [animatedMyPoints, setAnimatedMyPoints] = useState(0);
+  const [animatedOpponentPoints, setAnimatedOpponentPoints] = useState(0);
+  const [previousMyPoints, setPreviousMyPoints] = useState(0);
+  const [previousOpponentPoints, setPreviousOpponentPoints] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
   
   if (!roundResult) return null;
 
@@ -67,6 +75,58 @@ export default function ResultScreen() {
     }
   }
   
+  // ポイントアニメーションを制御するエフェクト
+  useEffect(() => {
+    if (!roundResult) return;
+    
+    // 現在のポイントから前回のポイントを計算
+    const calculatedPreviousMyPoints = updatedMyPoints - roundPoints;
+    const calculatedPreviousOpponentPoints = updatedOpponentPoints - opponentRoundPoints;
+    
+    // 初期値を設定
+    setAnimatedMyPoints(calculatedPreviousMyPoints);
+    setAnimatedOpponentPoints(calculatedPreviousOpponentPoints);
+    setPreviousMyPoints(calculatedPreviousMyPoints);
+    setPreviousOpponentPoints(calculatedPreviousOpponentPoints);
+    
+    // 少し遅延させてからアニメーション開始
+    setTimeout(() => {
+      setIsAnimating(true);
+    }, 500);
+    
+    let startTime;
+    const duration = 1500; // アニメーション期間（ミリ秒）
+    
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // イージング関数（徐々に遅くなる）
+      const easeOut = t => 1 - Math.pow(1 - t, 2);
+      const easedProgress = easeOut(progress);
+      
+      // 現在のアニメーション値を計算
+      const currentMyPoints = Math.round(previousMyPoints + (updatedMyPoints - previousMyPoints) * easedProgress);
+      const currentOpponentPoints = Math.round(previousOpponentPoints + (updatedOpponentPoints - previousOpponentPoints) * easedProgress);
+      
+      setAnimatedMyPoints(currentMyPoints);
+      setAnimatedOpponentPoints(currentOpponentPoints);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    if (isAnimating) {
+      requestAnimationFrame(animate);
+    }
+    
+    return () => {
+      setIsAnimating(false);
+    };
+  }, [roundResult, isAnimating]);
+  
   return (
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center justify-center bg-gradient-to-b from-blue-100 to-blue-200">
       <div className="w-full max-w-lg mx-auto p-4">
@@ -92,28 +152,60 @@ export default function ResultScreen() {
             </div>
           </div>
           
-          {/* 累積ポイント（最新の状態） */}
+          {/* 縦型プログレスバーを使った累積ポイント表示 */}
           <div className="bg-gray-100 p-4 rounded-lg mb-6">
             <h3 className="font-semibold mb-2 text-black text-center">現在の合計</h3>
-            <div className="flex justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-black">あなた</p>
-                <p className="text-xl font-bold text-black">{updatedMyPoints}ポイント</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-black">相手</p>
-                <p className="text-xl font-bold text-black">{updatedOpponentPoints}ポイント</p>
-              </div>
-            </div>
             
-            <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-blue-600" 
-                style={{ 
-                  width: `${(updatedMyPoints / (updatedMyPoints + updatedOpponentPoints)) * 100 || 0}%`,
-                  transition: 'width 1s ease-in-out' 
-                }}
-              ></div>
+            <div className="flex justify-around items-end h-60 mt-4 mb-2">
+              {/* プレイヤーのプログレスバー */}
+              <div className="flex flex-col items-center w-1/3">
+                <div className="text-center mb-2">
+                  <p className="text-sm font-medium text-black">あなた</p>
+                  <p className="text-xl font-bold text-black">{animatedMyPoints}ポイント</p>
+                </div>
+                <div className="relative w-16 h-48 bg-gray-200 rounded-t-lg overflow-hidden">
+                  <div 
+                    className="absolute bottom-0 w-full bg-blue-600 rounded-t-lg"
+                    style={{ 
+                      height: `${Math.min(animatedMyPoints, 100) / 100 * 100}%`,
+                      transition: isAnimating ? 'none' : 'height 0.5s ease-out'
+                    }}
+                  ></div>
+                  {/* 目盛り */}
+                  <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-between pointer-events-none">
+                    <div className="border-t border-gray-400 w-full h-0"></div>
+                    <div className="border-t border-gray-400 w-full h-0"></div>
+                    <div className="border-t border-gray-400 w-full h-0"></div>
+                    <div className="border-t border-gray-400 w-full h-0"></div>
+                  </div>
+                </div>
+                <div className="text-xs mt-1 text-gray-600">100ポイントで勝利</div>
+              </div>
+              
+              {/* 相手プレイヤーのプログレスバー */}
+              <div className="flex flex-col items-center w-1/3">
+                <div className="text-center mb-2">
+                  <p className="text-sm font-medium text-black">相手</p>
+                  <p className="text-xl font-bold text-black">{animatedOpponentPoints}ポイント</p>
+                </div>
+                <div className="relative w-16 h-48 bg-gray-200 rounded-t-lg overflow-hidden">
+                  <div 
+                    className="absolute bottom-0 w-full bg-red-500 rounded-t-lg"
+                    style={{ 
+                      height: `${Math.min(animatedOpponentPoints, 100) / 100 * 100}%`,
+                      transition: isAnimating ? 'none' : 'height 0.5s ease-out'
+                    }}
+                  ></div>
+                  {/* 目盛り */}
+                  <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-between pointer-events-none">
+                    <div className="border-t border-gray-400 w-full h-0"></div>
+                    <div className="border-t border-gray-400 w-full h-0"></div>
+                    <div className="border-t border-gray-400 w-full h-0"></div>
+                    <div className="border-t border-gray-400 w-full h-0"></div>
+                  </div>
+                </div>
+                <div className="text-xs mt-1 text-gray-600">100ポイントで勝利</div>
+              </div>
             </div>
           </div>
           

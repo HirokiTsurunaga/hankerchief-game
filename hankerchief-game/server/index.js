@@ -11,6 +11,11 @@ app.use(cors({
   credentials: true
 }));
 
+// ルートパスにシンプルなレスポンスを追加
+app.get('/', (req, res) => {
+  res.send('ハンカチ落としゲームサーバーが動作中です');
+});
+
 // テスト用APIエンドポイントを追加
 app.get('/api/test', (req, res) => {
   res.json({ message: 'CORS is working!', timestamp: new Date().toISOString() });

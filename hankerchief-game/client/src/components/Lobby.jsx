@@ -63,7 +63,30 @@ export default function Lobby() {
               />
             </div>
             
-            <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+            <div className="space-y-4">
+              <button
+                onClick={handleCreateRoom}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-200"
+              >
+                ルームを作成する
+              </button>
+              
+              <button
+                onClick={() => setView('join')}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md transition duration-200"
+              >
+                ルームに参加する
+              </button>
+              
+              <button
+                onClick={handleJoinRandomRoom}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-md transition duration-200"
+              >
+                ランダムなルームに参加
+              </button>
+            </div>
+            
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
               <h2 className="text-xl font-bold mb-4 text-blue-600">遊び方</h2>
               
               <div className="mb-4 text-left">
@@ -102,29 +125,6 @@ export default function Lobby() {
                   3. ラウンド終了後に結果が表示され、次のラウンドへ進みます<br />
                 </p>
               </div>
-            </div>
-            
-            <div className="space-y-4">
-              <button
-                onClick={handleCreateRoom}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-200"
-              >
-                ルームを作成する
-              </button>
-              
-              <button
-                onClick={() => setView('join')}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md transition duration-200"
-              >
-                ルームに参加する
-              </button>
-              
-              <button
-                onClick={handleJoinRandomRoom}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-md transition duration-200"
-              >
-                ランダムなルームに参加
-              </button>
             </div>
             
             {error && (

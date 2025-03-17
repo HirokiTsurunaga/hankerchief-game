@@ -6,9 +6,22 @@ export default function Lobby() {
   const [roomId, setRoomId] = useState('');
   const [view, setView] = useState('menu'); // menu, join のみに変更
 
-  // ロビー画面マウント時にソケットIDをチェック
+  // ロビー画面マウント時にURLパラメータを確認し、ソケットIDをチェック
   useEffect(() => {
     console.log("ロビー画面表示時のソケットID:", mySocketId);
+    
+    // URLからroomIdを取得（QRコードからのアクセス対応）
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomIdFromUrl = urlParams.get('roomId');
+    
+    if (roomIdFromUrl) {
+      // URLにルームIDが含まれている場合は自動的にJOIN画面に切り替え
+      setRoomId(roomIdFromUrl);
+      setView('join');
+      
+      // URLパラメータをクリア（履歴に残さないため）
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, [mySocketId]);
 
   // 直接ルームを作成する処理

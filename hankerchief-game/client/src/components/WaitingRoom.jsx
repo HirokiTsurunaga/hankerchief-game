@@ -1,7 +1,12 @@
 import { useGame } from '../context/GameContext';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function WaitingRoom() {
   const { roomId, playerName, resetGame, isRandomMatching } = useGame();
+  
+  // QRコード用のURL生成（アプリのURLにルームIDをパラメータとして追加）
+  const baseUrl = window.location.origin;
+  const qrCodeUrl = `${baseUrl}?roomId=${roomId}`;
 
   return (
     <div className="min-h-[calc(100vh-10rem)] flex flex-col items-center justify-center bg-gradient-to-b from-blue-100 to-blue-200">
@@ -26,6 +31,20 @@ export default function WaitingRoom() {
               <p className="text-sm text-gray-500 mt-2">このIDを相手に教えて参加してもらいましょう</p>
             )}
           </div>
+          
+          {!isRandomMatching && (
+            <div className="bg-white p-4 rounded-lg mb-6 border border-gray-200">
+              <p className="text-gray-700 mb-3">または、このQRコードをスキャンして参加:</p>
+              <div className="flex justify-center">
+                <div className="border-4 border-blue-100 p-2 rounded-lg bg-white">
+                  <QRCodeSVG value={qrCodeUrl} size={180} level="H" />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-3">
+                QRコードをスキャンすると、ルームに直接参加できます
+              </p>
+            </div>
+          )}
           
           <div className="mb-6">
             <p className="text-gray-700">

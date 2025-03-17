@@ -4,6 +4,16 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 require('dotenv').config();
 
+// グローバルエラーハンドリング
+process.on('uncaughtException', (err) => {
+  console.error('未捕捉の例外が発生しました:', err);
+  // プロセスを終了せず、アプリを実行し続ける
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('未処理のPromise拒否:', reason);
+});
+
 const app = express();
 app.use(cors({
   origin: "*",
@@ -20,6 +30,26 @@ app.get('/', (req, res) => {
 app.get('/api/test', (req, res) => {
   res.json({ message: 'CORS is working!', timestamp: new Date().toISOString() });
 });
+
+// Keepaliveエンドポイント（Railway対策）
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
+// サーバー自身を定期的にpingするタイマー設定
+setInterval(() => {
+  try {
+    console.log('Keeping server alive...');
+    // 自己ping
+    http.get(`http://localhost:${process.env.PORT || 3001}/ping`, (res) => {
+      console.log('Ping status:', res.statusCode);
+    }).on('error', (err) => {
+      console.error('Ping error:', err.message);
+    });
+  } catch (err) {
+    console.error('Keepalive error:', err);
+  }
+}, 60000); // 60秒ごと
 
 const server = http.createServer(app);
 const io = new Server(server, {

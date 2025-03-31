@@ -160,6 +160,10 @@ export default function Lobby() {
               </button>
             </div>
           </form>
+
+          <div className="mt-6">
+              <GameRules />
+          </div>
           
           {error && (
             <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">

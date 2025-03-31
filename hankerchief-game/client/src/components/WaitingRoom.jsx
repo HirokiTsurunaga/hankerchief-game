@@ -1,5 +1,6 @@
 import { useGame } from '../context/GameContext';
 import { QRCodeSVG } from 'qrcode.react';
+import GameRules from './GameRules';
 
 export default function WaitingRoom() {
   const { roomId, playerName, resetGame, isRandomMatching } = useGame();
@@ -78,6 +79,11 @@ export default function WaitingRoom() {
           >
             ロビーに戻る
           </button>
+          
+          {/* 遊び方説明コンポーネント */}
+          <div className="mt-8">
+            <GameRules />
+          </div>
         </div>
       </div>
     </div>
